@@ -16,7 +16,6 @@ object Application {
   }
 
   def printArgs(args: Array[String]): Unit = {
-
     for (i <- args.indices) {
       val arg: String = args(i)
       printf("args[%d]: %s\n", i, arg)
@@ -43,11 +42,10 @@ object Application {
       .schema(genomeScoresSchema)
       .load(csvFileName)
 
-    csvFile.printSchema()
-    //val sc = SparkSession.builder().master("local").getOrCreate().sparkContext
-    //val spark = SparkSession.builder().master(spark_mstr_str).getOrCreate()
 
-    //val df = spark.read.format("csv").load(csv_dir + "/ratings.csv")
+    csvFile.printSchema()
+    val recordCount: Long = csvFile.count()
+
     spark.close()
   }
 
