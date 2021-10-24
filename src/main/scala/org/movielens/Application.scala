@@ -15,23 +15,31 @@ object Application {
     println()
   }
 
-  def main(args: Array[String]): Unit = {
+  def printArgs(args: Array[String]): Unit = {
 
+    for (i <- args.indices) {
+      val arg: String = args(i)
+      printf("args[%d]: %s\n", i, arg)
+    }
+  }
+
+  def main(args: Array[String]): Unit = {
+    printArgs(args)
     if(args.length != 1) {
       printUsage()
       System.exit(1)
     }
 
     val genomeScoresSchema: StructType = new StructType()
-      .add("movieId", IntegerType, false)
-      .add("tagId", IntegerType, false)
-      .add("relevance", DoubleType, false)
+      .add("movieId", IntegerType, nullable = false)
+      .add("tagId", IntegerType, nullable = false)
+      .add("relevance", DoubleType, nullable =false)
 
     val spark: SparkSession = SparkSession.builder.appName("MovieLens Insights").getOrCreate()
-    val csvFileName: String = args(1)
+    val csvFileName: String = args(0)
     val csvFile: DataFrame = spark.read
       .format("csv")
-      .option("header", true)
+      .option("header", value = true)
       .schema(genomeScoresSchema)
       .load(csvFileName)
 
