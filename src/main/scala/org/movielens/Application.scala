@@ -44,8 +44,7 @@ object Application {
 
 
     csvFile.printSchema()
-    val recordCount: Long = csvFile.count()
-
+    printf("\n>>> Genome Scoring Record Count: %d\n", csvFile.count())
     spark.close()
   }
 
