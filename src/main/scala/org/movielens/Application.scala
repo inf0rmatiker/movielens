@@ -37,19 +37,20 @@ object Application {
     val csvDataDirectory: String = args(0)
     val outputDirectory: String = args(1)
 
-    val insights: Insights = new Insights(csvDataDirectory, outputDirectory, sparkSession)
+    //val insights: Insights = new Insights(csvDataDirectory, outputDirectory, sparkSession)
 
-    insights.moviesReleasedPerYear()
+    //insights.moviesReleasedPerYear()
     //insights.averageNumberOfGenresPerMovie()
     //insights.movieCountTaggedComedy()
 
-    //val dataFrameLoader: DataFrameLoader = new DataFrameLoader(csvDataDirectory, sparkSession)
-    //val genomeScoresDf: DataFrame = dataFrameLoader.loadGenomeScores()
+    val dataFrameLoader: DataFrameLoader = new DataFrameLoader(csvDataDirectory, sparkSession)
+    val genomeScoresDf: DataFrame = dataFrameLoader.loadGenomeScores()
 
-    //genomeScoresDf.printSchema()
+    genomeScoresDf.printSchema()
+    genomeScoresDf.show(10)
     //printf("\n>>> Genome Scoring Record Count: %d\n", genomeScoresDf.count())
 
-    //sparkSession.close()
+    sparkSession.close()
   }
 
 }
