@@ -35,7 +35,6 @@ object Application {
     }
     val sparkSession: SparkSession = SparkSession.builder
       .appName("MovieLens Insights")
-      .master("yarn")
       .getOrCreate()
 
     val csvDataDirectory: String = args(0)
