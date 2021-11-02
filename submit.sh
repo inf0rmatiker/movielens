@@ -9,7 +9,7 @@ if [[ $# -eq 2 ]]; then
   echo -e "Submitting Spark Job...\n"
   HADOOP_CONF_DIR="$HOME/conf" "${SPARK_HOME}"/bin/spark-submit \
     --class org.movielens.Application \
-    --master spark://cheyenne:30633 \
+    --master yarn \
     --deploy-mode cluster \
     --driver-memory 4g \
     --executor-memory 2g \
