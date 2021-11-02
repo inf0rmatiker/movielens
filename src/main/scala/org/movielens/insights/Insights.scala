@@ -40,15 +40,22 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       Order by the "release_year" field.
       Resulting DataFrame:
 
+      +------------+----------+
+      |release_year|sum(count)|
+      +------------+----------+
+      |      (1891)|         1|
+      |      (1893)|         1|
+      |      (1894)|         2|
+      |      (1895)|         2|
+      |      (1896)|         2|
+      +------------+----------+
      */
     val releaseCountsDf: DataFrame = releaseDf
       .groupBy($"release_year")
       .sum("count")
       .orderBy(asc("release_year"))
 
-    releaseCountsDf.show(5)
-
-    //releaseCountsDf.write.option("header", true).csv("output/q1")
+    releaseCountsDf.write.option("header", value = true).csv(s"$outputDirectory/q1")
   }
 
   def averageNumberOfGenresPerMovie(): Unit = {
