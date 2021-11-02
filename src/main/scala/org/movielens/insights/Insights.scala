@@ -10,25 +10,44 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
 
   def moviesReleasedPerYear(): Unit = {
     import sparkSession.implicits._
-
     val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
-
     val columnNames = Seq("release_year", "count")
 
-    // Example title: "Toy Story (1995)"
-    // Add two columns, "release_year" and "count" to the Dataframe
-    // - release_year: filters by titles containing a year; extracting the year from the title
-    // - count: just a literal 1 at each row
-    // Select only those two columns, discarding the rest
+    /*
+      Example title: "Toy Story (1995)"
+      Add two columns, "release_year" and "count" to the Dataframe
+      - release_year: filters by titles containing a year; extracting the year from the title
+      - count: just a literal 1 at each row
+      Select only those two columns, discarding the rest.
+      Resulting DataFrame:
+      +------------+-----+
+      |release_year|count|
+      +------------+-----+
+      |      (1995)|    1|
+      |      (1995)|    1|
+      |      (1995)|    1|
+      |      (1995)|    1|
+      |      (1995)|    1|
+      +------------+-----+
+     */
     val releaseDf : DataFrame = movieInfoDf.filter($"title" rlike "\\(\\d{4}\\)")
       .withColumn("release_year", regexp_extract($"title", "\\(\\d{4}\\)", 0))
       .withColumn("count",  lit(1))
       .select(columnNames.head, columnNames.tail: _*)
 
-    releaseDf.show(5)
+    /*
+      Group by "release_year", using the aggregate sum from the "count" column.
+      Order by the "release_year" field.
+      Resulting DataFrame:
 
-    //
-    //val releaseCountsDf: DataFrame = releaseDf.groupBy($"release_year").sum("count").orderBy(asc("release_year"))
+     */
+    val releaseCountsDf: DataFrame = releaseDf
+      .groupBy($"release_year")
+      .sum("count")
+      .orderBy(asc("release_year"))
+
+    releaseCountsDf.show(5)
+
     //releaseCountsDf.write.option("header", true).csv("output/q1")
   }
 
