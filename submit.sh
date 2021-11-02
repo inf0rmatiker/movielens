@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function print_usage {
-  echo -e "USAGE\n\tsubmit.sh <spark_master> <file>"
+  echo -e "USAGE\n\tsubmit.sh <input_data_directory> <output_directory>"
   echo -e "\nEXAMPLE\n\tsubmit.sh hdfs://cheyenne:30600/cs555/data/movielens hdfs://cheyenne:30600/cs555/output\n"
 }
 
