@@ -29,7 +29,7 @@ object Application {
 
   def main(args: Array[String]): Unit = {
     printArgs(args)
-    if(args.length != 1) {
+    if(args.length != 2) {
       printUsage()
       System.exit(1)
     }
