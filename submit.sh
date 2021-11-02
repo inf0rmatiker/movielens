@@ -11,6 +11,9 @@ if [[ $# -eq 2 ]]; then
     --class org.movielens.Application \
     --master yarn \
     --deploy-mode cluster \
+    --driver-memory 4g \
+    --executor-memory 2g \
+    --executor-cores 1 \
     target/scala-2.12/movielens_2.12-0.1.jar "$1" "$2"
 else
   print_usage
