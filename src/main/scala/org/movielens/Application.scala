@@ -98,6 +98,21 @@ object Application {
 
   }
 
+  def averageNumberOfGenresPerMoviesQ2( dataDirectory:String, spark:SparkSession ): Unit =
+  {
+    import spark.implicits._
+
+    val selectColumns = Seq("movieId", "genre_cnt")
+    val movieGenres_df : DataFrame = getMovieInfoDataFrame( dataDirectory, spark )
+
+    val genres_df : DataFrame = movieGenres_df.withColumn("genre_cnt", size(split($"genres", "\\|")))
+      .select(selectColumns.head, selectColumns.tail: _*)
+
+    val avg_genres_df : DataFrame = genres_df.select(avg($"genre_cnt"))
+    //avg_genres_df.write.option("header", true).csv("output/q1")
+    avg_genres_df.show()
+  }
+
   def main(args: Array[String]): Unit = {
     printArgs(args)
     if(args.length != 1) {
