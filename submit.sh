@@ -7,9 +7,9 @@ function print_usage {
 
 if [[ $# -eq 2 ]]; then
   echo -e "Submitting Spark Job...\n"
-  "${SPARK_HOME}"/bin/spark-submit \
+  HADOOP_CONF_DIR="$HOME/conf" "${SPARK_HOME}"/bin/spark-submit \
     --class org.movielens.Application \
-    --master yarn \
+    --master spark://cheyenne:30633 \
     --deploy-mode cluster \
     --driver-memory 4g \
     --executor-memory 2g \
