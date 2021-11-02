@@ -49,7 +49,7 @@ object Application {
     //genomeScoresDf.printSchema()
     //printf("\n>>> Genome Scoring Record Count: %d\n", genomeScoresDf.count())
 
-    sparkSession.close()
+    //sparkSession.close()
   }
 
 }
