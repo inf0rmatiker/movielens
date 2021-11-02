@@ -110,7 +110,7 @@ object Application {
 
     val avg_genres_df : DataFrame = genres_df.select(avg($"genre_cnt"))
     avg_genres_df.write.option("header", true).csv("output/q2")
-    avg_genres_df.show()
+    //avg_genres_df.show()
   }
 
   def movieCntTaggedComedyQ5( dataDirectory:String, spark:SparkSession ): Unit = {
