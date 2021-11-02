@@ -72,6 +72,7 @@ object Application {
     println("\tBuild:\n\t\tsbt package")
     println("\tSubmit as JAR to Spark cluster:\n\t\t$SPARK_HOME/bin/spark-submit <submit_options> \\")
     println("\t\ttarget/scala-2.13/movielens_2.13-0.1.jar <hdfs_file>")
+    println("\t\trequires option csv_directory needs to have path to where the data csv files are")
     println()
   }
 
