@@ -4,7 +4,7 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.{asc, avg, lit, regexp_extract, size, split, sum}
 import org.movielens.loader.DataFrameLoader
 
-class Insights(val dataDirectory: String, val sparkSession: SparkSession) {
+class Insights(val dataDirectory: String, val outputDirectory: String, val sparkSession: SparkSession) {
 
   val dataFrameLoader: DataFrameLoader = new DataFrameLoader(dataDirectory, sparkSession)
 
@@ -14,12 +14,22 @@ class Insights(val dataDirectory: String, val sparkSession: SparkSession) {
     val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
 
     val columnNames = Seq("release_year", "count")
-    val releaseDf : DataFrame = movieInfoDf.filter($"title" rlike "\\(\\d{4}\\)")
-      .withColumn("release_year", regexp_extract($"title", "\\(\\d{4}\\)", 0 ))
-      .withColumn("count",  lit(1)).select(columnNames.head, columnNames.tail: _*)
 
-    val releaseCountsDf: DataFrame = releaseDf.groupBy($"release_year").sum("count").orderBy(asc("release_year"))
-    releaseCountsDf.write.option("header", true).csv("output/q1")
+    // Example title: "Toy Story (1995)"
+    // Add two columns, "release_year" and "count" to the Dataframe
+    // - release_year: filters by titles containing a year; extracting the year from the title
+    // - count: just a literal 1 at each row
+    // Select only those two columns, discarding the rest
+    val releaseDf : DataFrame = movieInfoDf.filter($"title" rlike "\\(\\d{4}\\)")
+      .withColumn("release_year", regexp_extract($"title", "\\(\\d{4}\\)", 0))
+      .withColumn("count",  lit(1))
+      .select(columnNames.head, columnNames.tail: _*)
+
+    releaseDf.show(5)
+
+    //
+    //val releaseCountsDf: DataFrame = releaseDf.groupBy($"release_year").sum("count").orderBy(asc("release_year"))
+    //releaseCountsDf.write.option("header", true).csv("output/q1")
   }
 
   def averageNumberOfGenresPerMovie(): Unit = {
