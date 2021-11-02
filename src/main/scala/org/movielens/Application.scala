@@ -93,13 +93,12 @@ object Application {
       .withColumn("count",  lit(1)).select(columnNames.head, columnNames.tail: _*)
 
     val release_cnts : DataFrame = release_df.groupBy($"release_year").sum("count").orderBy(asc("release_year"))
-    //release_cnts.write.option("header", true).csv("output/q1")
-    release_cnts.rdd.collect().foreach(println)
+    release_cnts.write.option("header", true).csv("output/q1")
+    //release_cnts.rdd.collect().foreach(println)
 
   }
 
-  def averageNumberOfGenresPerMoviesQ2( dataDirectory:String, spark:SparkSession ): Unit =
-  {
+  def averageNumberOfGenresPerMoviesQ2( dataDirectory:String, spark:SparkSession ): Unit = {
     import spark.implicits._
 
     val selectColumns = Seq("movieId", "genre_cnt")
@@ -109,12 +108,11 @@ object Application {
       .select(selectColumns.head, selectColumns.tail: _*)
 
     val avg_genres_df : DataFrame = genres_df.select(avg($"genre_cnt"))
-    //avg_genres_df.write.option("header", true).csv("output/q1")
+    avg_genres_df.write.option("header", true).csv("output/q2")
     avg_genres_df.show()
   }
 
   def movieCntTaggedComedyQ5( dataDirectory:String, spark:SparkSession ): Unit = {
-  {
     import spark.implicits._
 
     val movieInfo_df : DataFrame = getMovieInfoDataFrame( dataDirectory, spark )
@@ -125,10 +123,9 @@ object Application {
       .withColumn("isComedy", lit(1))
 
     //val comedy_cnt : DataFrame = genres_df.groupBy($"movieId").sum("isComedy").orderBy(asc("release_year"))
-    val avg_genres_df : DataFrame = genres_df.select(sum($"isComedy"))
-    avg_genres_df.show()
-  }
-  s
+    val comedy_sum_df : DataFrame = genres_df.select(sum($"isComedy"))
+    comedy_sum_df.write.option("header", true).csv("output/q5")
+    //avg_genres_df.show()
   }
 
   def main(args: Array[String]): Unit = {
@@ -137,20 +134,15 @@ object Application {
       printUsage()
       System.exit(1)
     }
-
-    val genomeScoresSchema: StructType = new StructType()
-      .add("movieId", IntegerType, nullable = false)
-      .add("tagId", IntegerType, nullable = false)
-      .add("relevance", DoubleType, nullable =false)
-
     val spark: SparkSession = SparkSession.builder.appName("MovieLens Insights").getOrCreate()
-    val csvFileName: String = args(0)
-    val csvFile: DataFrame = spark.read
-      .format("csv")
-      .option("header", value = true)
-      .schema(genomeScoresSchema)
-      .load(csvFileName)
 
+    val csvDataDirectory: String = args(0)
+
+    moviesReleasedPerYearQ1(csvDataDirectory, spark)
+    averageNumberOfGenresPerMoviesQ2(csvDataDirectory, spark)
+    movieCntTaggedComedyQ5(csvDataDirectory, spark)
+
+    val csvFile: DataFrame = getGenomeScoresDataFrame(csvDataDirectory, spark)
 
     csvFile.printSchema()
     printf("\n>>> Genome Scoring Record Count: %d\n", csvFile.count())
