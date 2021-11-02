@@ -113,6 +113,24 @@ object Application {
     avg_genres_df.show()
   }
 
+  def movieCntTaggedComedyQ5( dataDirectory:String, spark:SparkSession ): Unit = {
+  {
+    import spark.implicits._
+
+    val movieInfo_df : DataFrame = getMovieInfoDataFrame( dataDirectory, spark )
+
+    val selectColumns = Seq("movieId", "genres")
+    val genres_df : DataFrame = movieInfo_df.filter($"genres".rlike("(?i)\\bcomedy\\b"))
+      .select(selectColumns.head, selectColumns.tail: _*)
+      .withColumn("isComedy", lit(1))
+
+    //val comedy_cnt : DataFrame = genres_df.groupBy($"movieId").sum("isComedy").orderBy(asc("release_year"))
+    val avg_genres_df : DataFrame = genres_df.select(sum($"isComedy"))
+    avg_genres_df.show()
+  }
+  s
+  }
+
   def main(args: Array[String]): Unit = {
     printArgs(args)
     if(args.length != 1) {
