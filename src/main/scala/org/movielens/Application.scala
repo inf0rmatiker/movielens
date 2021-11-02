@@ -82,7 +82,21 @@ object Application {
     }
   }
 
+  def moviesReleasedPerYearQ1( dataDirectory:String, spark:SparkSession): Unit = {
+    import spark.implicits._
 
+    val movieInfo_df : DataFrame = getMovieInfoDataFrame( dataDirectory, spark )
+
+    val columnNames = Seq("release_year", "count")
+    val release_df : DataFrame = movieInfo_df.filter($"title" rlike "\\(\\d{4}\\)")
+      .withColumn("release_year", regexp_extract($"title", "\\(\\d{4}\\)", 0 ))
+      .withColumn("count",  lit(1)).select(columnNames.head, columnNames.tail: _*)
+
+    val release_cnts : DataFrame = release_df.groupBy($"release_year").sum("count").orderBy(asc("release_year"))
+    //release_cnts.write.option("header", true).csv("output/q1")
+    release_cnts.rdd.collect().foreach(println)
+
+  }
 
   def main(args: Array[String]): Unit = {
     printArgs(args)
