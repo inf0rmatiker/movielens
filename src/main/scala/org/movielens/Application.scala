@@ -33,7 +33,11 @@ object Application {
       printUsage()
       System.exit(1)
     }
-    val sparkSession: SparkSession = SparkSession.builder.appName("MovieLens Insights").getOrCreate()
+    val sparkSession: SparkSession = SparkSession.builder
+      .appName("MovieLens Insights")
+      .master("yarn")
+      .getOrCreate()
+
     val csvDataDirectory: String = args(0)
     val outputDirectory: String = args(1)
 
