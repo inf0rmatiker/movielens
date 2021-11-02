@@ -33,6 +33,8 @@ object Application {
       printUsage()
       System.exit(1)
     }
+
+    printf("MADE IT HERE 0\n")
     val sparkSession: SparkSession = SparkSession.builder
       .appName("MovieLens Insights")
       .getOrCreate()
@@ -45,10 +47,11 @@ object Application {
     //insights.moviesReleasedPerYear()
     //insights.averageNumberOfGenresPerMovie()
     //insights.movieCountTaggedComedy()
-
+    printf("MADE IT HERE 1\n")
     val dataFrameLoader: DataFrameLoader = new DataFrameLoader(csvDataDirectory, sparkSession)
     val genomeScoresDf: DataFrame = dataFrameLoader.loadGenomeScores()
 
+    printf("MADE IT HERE 2\n")
     genomeScoresDf.printSchema()
     genomeScoresDf.show(10)
     //printf("\n>>> Genome Scoring Record Count: %d\n", genomeScoresDf.count())
