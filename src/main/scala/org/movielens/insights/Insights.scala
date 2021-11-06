@@ -146,7 +146,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       .drop("genres_array") // Drop the original array column
       .groupBy(col("genre")) // Group by genres of the same value
       .count() // Group under the distinct genre counts
-      .filter(!col("genres").contains("(no genres listed)")) // Remove movies without genres
+      .filter(!col("genre").contains("(no genres listed)")) // Remove movies without genres
       .sort(col("genre").desc) // Sort by highest -> lowest
 
     // Save results
