@@ -1,12 +1,22 @@
 package org.movielens.insights
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions.{asc, avg, lit, regexp_extract, size, split, sum}
+import org.apache.spark.sql.functions.{asc, avg, col, explode, lit, regexp_extract, size, split, sum}
 import org.movielens.loader.DataFrameLoader
 
 class Insights(val dataDirectory: String, val outputDirectory: String, val sparkSession: SparkSession) {
 
   val dataFrameLoader: DataFrameLoader = new DataFrameLoader(dataDirectory, sparkSession)
+
+  def getUniqueGenresList( ): List[String] = {
+    import sparkSession.implicits._
+    val genres_df: DataFrame = dataFrameLoader.loadMovieInfo()
+    val unique_genres_df: DataFrame = genres_df.withColumn("genre_list", split(col("genres"), "\\|" ))
+      .select($"movieId", explode($"genre_list").as("genre_type"))
+      .select($"genre_type").dropDuplicates(Seq("genre_type"))
+
+    return unique_genres_df.select($"genre_type").map(genre => genre.getString(0)).collect().toList
+  }
 
   def moviesReleasedPerYear(): Unit = {
     import sparkSession.implicits._
@@ -71,17 +81,38 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
     averageGenresDf.write.option("header", true).csv("output/q2")
   }
 
+  def rankedGenres(): Unit =
+  {
+    import sparkSession.implicits._
+
+    val unique_genres : List[String] = getUniqueGenresList( )
+    for ( genre <- unique_genres) {
+      val selectGenreColumns = Seq("movieId", "genres")
+      val movieGenresDF: DataFrame = dataFrameLoader.loadMovieInfo()
+        .select(selectGenreColumns.head, selectGenreColumns.tail: _*)
+
+      val selectRatingColumns = Seq("userId", "movieId", "rating")
+      val movieRatingsDF: DataFrame = dataFrameLoader.loadRatings()
+        .select(selectRatingColumns.head, selectRatingColumns.tail: _*)
+
+      val ratings_DF: DataFrame = movieRatingsDF.join(movieGenresDF, Seq("movieId"), "left").filter($"genres".rlike(s"(?i)\\b$genre\\b"))
+      val avg_ratings_DF: DataFrame = ratings_DF.select(avg($"rating"))
+      avg_ratings_DF.show(10, false)
+    }
+  }
+
   def movieCountTaggedComedy(): Unit = {
     import sparkSession.implicits._
 
-    val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
+    val movieTagsDf: DataFrame = dataFrameLoader.loadTags()
 
-    val selectColumns = Seq("movieId", "genres")
-    val genresDf : DataFrame = movieInfoDf.filter($"genres".rlike("(?i)\\bcomedy\\b"))
+    val selectColumns = Seq("movieId", "tag")
+    val genres_df : DataFrame = movieTagsDf.filter($"tag".rlike("(?i)\\bcomedy\\b"))
       .select(selectColumns.head, selectColumns.tail: _*)
       .withColumn("isComedy", lit(1))
+      .dropDuplicates(Seq("movieId"))
 
-    val comedySumDf : DataFrame = genresDf.select(sum($"isComedy"))
+    val comedySumDf : DataFrame = genres_df.select(sum($"isComedy"))
     comedySumDf.write.option("header", true).csv("output/q5")
   }
 
