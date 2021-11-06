@@ -150,7 +150,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       .sort(col("genre").desc) // Sort by highest -> lowest
 
     // Save results
-    dataFrameSaver.saveAsCsv("question_6.csv", uniqueGenres)
+    dataFrameSaver.saveAsCsv("question_6", uniqueGenres)
   }
 
 }
