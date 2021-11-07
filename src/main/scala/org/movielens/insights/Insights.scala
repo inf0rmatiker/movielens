@@ -70,7 +70,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       .sum("count")
       .orderBy(asc("release_year"))
 
-    releaseCountsDf.write.option("header", value = true).csv(s"$outputDirectory/q1")
+    dataFrameSaver.saveAsCsv("question_1", releaseCountsDf)
   }
 
   def averageNumberOfGenresPerMovie(): Unit = {
@@ -83,7 +83,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       .select(selectColumns.head, selectColumns.tail: _*)
 
     val averageGenresDf: DataFrame = genresDf.select(avg($"genre_cnt"))
-    averageGenresDf.write.option("header", true).csv("output/q2")
+    dataFrameSaver.saveAsCsv("question_2", averageGenresDf)
   }
 
   def rankedGenres(): Unit =
@@ -109,7 +109,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
     }
 
     val orderdRankedGenres : DataFrame = ranked_Genres.toSeq.toDF("genre", "avg_rating").sort(desc("avg_rating"))
-    orderdRankedGenres.show(20, false)
+    dataFrameSaver.saveAsCsv("question_3", orderdRankedGenres)
   }
 
   def movieCountTaggedComedy(): Unit = {
@@ -124,7 +124,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       .dropDuplicates(Seq("movieId"))
 
     val comedySumDf : DataFrame = genres_df.select(sum($"isComedy"))
-    comedySumDf.write.option("header", true).csv("output/q5")
+    dataFrameSaver.saveAsCsv("question_5", comedySumDf)
   }
 
   /**
