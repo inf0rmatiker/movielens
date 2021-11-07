@@ -2,12 +2,12 @@
 
 function print_usage {
   echo -e "USAGE\n\tsubmit.sh <input_data_directory> <output_directory>"
-  echo -e "\nEXAMPLE\n\tsubmit.sh hdfs://cheyenne:30600/cs555/data/movielens hdfs://cheyenne:30600/cs555/output\n"
+  echo -e "\nEXAMPLE\n\tsubmit.sh hdfs://char:30600/cs555/data hdfs://char:30600/cs555/output\n"
 }
 
 if [[ $# -eq 2 ]]; then
   echo -e "Submitting Spark Job...\n"
-  HADOOP_CONF_DIR="$HOME/conf" "${SPARK_HOME}"/bin/spark-submit \
+  HADOOP_CONF_DIR="$HOME/hadoop" "${SPARK_HOME}"/bin/spark-submit \
     --class org.movielens.Application \
     --master yarn \
     --deploy-mode cluster \
