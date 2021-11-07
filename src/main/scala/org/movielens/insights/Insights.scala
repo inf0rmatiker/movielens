@@ -3,6 +3,7 @@ package org.movielens.insights
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions.{asc, avg, col, explode, lit, regexp_extract, size, split, sum}
 import org.movielens.loader.DataFrameLoader
+import org.apache.spark.sql.functions._
 
 class Insights(val dataDirectory: String, val outputDirectory: String, val sparkSession: SparkSession) {
 
@@ -85,20 +86,26 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
   {
     import sparkSession.implicits._
 
-    val unique_genres : List[String] = getUniqueGenresList( )
+    var ranked_Genres: Map[String, Double] = Map()
+    val unique_genres : List[String] = getUniqueGenresList()
+
     for ( genre <- unique_genres) {
       val selectGenreColumns = Seq("movieId", "genres")
       val movieGenresDF: DataFrame = dataFrameLoader.loadMovieInfo()
         .select(selectGenreColumns.head, selectGenreColumns.tail: _*)
 
       val selectRatingColumns = Seq("userId", "movieId", "rating")
-      val movieRatingsDF: DataFrame = dataFrameLoader.loadRatings()
+      val movieRatingsDF: DataFrame = dataFrameLoader.loadRatings( )
         .select(selectRatingColumns.head, selectRatingColumns.tail: _*)
 
       val ratings_DF: DataFrame = movieRatingsDF.join(movieGenresDF, Seq("movieId"), "left").filter($"genres".rlike(s"(?i)\\b$genre\\b"))
-      val avg_ratings_DF: DataFrame = ratings_DF.select(avg($"rating"))
-      avg_ratings_DF.show(10, false)
+      val avg_rating_list: List[Double] = ratings_DF.select(avg($"rating")).map(genre => genre.getDouble(0)).collect().toList
+
+      ranked_Genres += (genre -> avg_rating_list.head )
     }
+
+    val orderdRankedGenres : DataFrame = ranked_Genres.toSeq.toDF("genre", "avg_rating").sort(desc("avg_rating"))
+    orderdRankedGenres.show(20, false)
   }
 
   def movieCountTaggedComedy(): Unit = {

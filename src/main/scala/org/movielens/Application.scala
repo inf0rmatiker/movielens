@@ -44,9 +44,10 @@ object Application {
 
     val insights: Insights = new Insights(csvDataDirectory, outputDirectory, sparkSession)
 
-    insights.moviesReleasedPerYear()
+    //insights.moviesReleasedPerYear()
     //insights.averageNumberOfGenresPerMovie()
     //insights.movieCountTaggedComedy()
+    insights.rankedGenres()
 
     /* Debugging section
     //printf("MADE IT HERE 1\n")
