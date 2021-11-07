@@ -1,14 +1,25 @@
 package org.movielens.insights
 
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.apache.spark.sql.functions.{asc, avg, col, explode_outer, lit, regexp_extract, size, split, sum}
+import org.apache.spark.sql.functions.{asc, avg, col, explode, explode_outer, lit, regexp_extract, size, split, sum}
 import org.movielens.loader.DataFrameLoader
 import org.movielens.saver.DataFrameSaver
+import org.apache.spark.sql.functions._
 
 class Insights(val dataDirectory: String, val outputDirectory: String, val sparkSession: SparkSession) {
 
   val dataFrameLoader: DataFrameLoader = new DataFrameLoader(dataDirectory, sparkSession)
   val dataFrameSaver: DataFrameSaver = new DataFrameSaver(outputDirectory)
+
+  def getUniqueGenresList( ): List[String] = {
+    import sparkSession.implicits._
+    val genres_df: DataFrame = dataFrameLoader.loadMovieInfo()
+    val unique_genres_df: DataFrame = genres_df.withColumn("genre_list", split(col("genres"), "\\|" ))
+      .select($"movieId", explode($"genre_list").as("genre_type"))
+      .select($"genre_type").dropDuplicates(Seq("genre_type"))
+
+    return unique_genres_df.select($"genre_type").map(genre => genre.getString(0)).collect().toList
+  }
 
   def moviesReleasedPerYear(): Unit = {
     import sparkSession.implicits._
@@ -59,7 +70,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       .sum("count")
       .orderBy(asc("release_year"))
 
-    releaseCountsDf.write.option("header", value = true).csv(s"$outputDirectory/q1")
+    dataFrameSaver.saveAsCsv("question_1", releaseCountsDf)
   }
 
   def averageNumberOfGenresPerMovie(): Unit = {
@@ -72,21 +83,48 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       .select(selectColumns.head, selectColumns.tail: _*)
 
     val averageGenresDf: DataFrame = genresDf.select(avg($"genre_cnt"))
-    averageGenresDf.write.option("header", true).csv("output/q2")
+    dataFrameSaver.saveAsCsv("question_2", averageGenresDf)
+  }
+
+  def rankedGenres(): Unit =
+  {
+    import sparkSession.implicits._
+
+    var ranked_Genres: Map[String, Double] = Map()
+    val unique_genres : List[String] = getUniqueGenresList()
+
+    for ( genre <- unique_genres) {
+      val selectGenreColumns = Seq("movieId", "genres")
+      val movieGenresDF: DataFrame = dataFrameLoader.loadMovieInfo()
+        .select(selectGenreColumns.head, selectGenreColumns.tail: _*)
+
+      val selectRatingColumns = Seq("userId", "movieId", "rating")
+      val movieRatingsDF: DataFrame = dataFrameLoader.loadRatings( )
+        .select(selectRatingColumns.head, selectRatingColumns.tail: _*)
+
+      val ratings_DF: DataFrame = movieRatingsDF.join(movieGenresDF, Seq("movieId"), "left").filter($"genres".rlike(s"(?i)\\b$genre\\b"))
+      val avg_rating_list: List[Double] = ratings_DF.select(avg($"rating")).map(genre => genre.getDouble(0)).collect().toList
+
+      ranked_Genres += (genre -> avg_rating_list.head )
+    }
+
+    val orderdRankedGenres : DataFrame = ranked_Genres.toSeq.toDF("genre", "avg_rating").sort(desc("avg_rating"))
+    dataFrameSaver.saveAsCsv("question_3", orderdRankedGenres)
   }
 
   def movieCountTaggedComedy(): Unit = {
     import sparkSession.implicits._
 
-    val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
+    val movieTagsDf: DataFrame = dataFrameLoader.loadTags()
 
-    val selectColumns = Seq("movieId", "genres")
-    val genresDf : DataFrame = movieInfoDf.filter($"genres".rlike("(?i)\\bcomedy\\b"))
+    val selectColumns = Seq("movieId", "tag")
+    val genres_df : DataFrame = movieTagsDf.filter($"tag".rlike("(?i)\\bcomedy\\b"))
       .select(selectColumns.head, selectColumns.tail: _*)
       .withColumn("isComedy", lit(1))
+      .dropDuplicates(Seq("movieId"))
 
-    val comedySumDf : DataFrame = genresDf.select(sum($"isComedy"))
-    comedySumDf.write.option("header", true).csv("output/q5")
+    val comedySumDf : DataFrame = genres_df.select(sum($"isComedy"))
+    dataFrameSaver.saveAsCsv("question_5", comedySumDf)
   }
 
   /**
