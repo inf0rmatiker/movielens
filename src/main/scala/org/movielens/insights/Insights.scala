@@ -222,8 +222,11 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
     // Sort by average ratings, descending, and select only top N entries
     val topNMoviesIdsDf: DataFrame = averageMovieRatingDf.sort(col("avg(rating)").desc).limit(n)
 
-    val withMovieInfoDf: DataFrame = topNMoviesIdsDf.join(movieInfoDf, usingColumn = "movieId", joinType = "inner")
+    // Add movie title, genres, etc to the top N movies
+    val withMovieInfoDf: DataFrame = topNMoviesIdsDf.join(movieInfoDf, usingColumn = "movieId")
 
+    // Save results
+    dataFrameSaver.saveAsCsv("question_7", withMovieInfoDf)
   }
 
   def getTopNGenreCombinations(n: Integer): Unit = {
