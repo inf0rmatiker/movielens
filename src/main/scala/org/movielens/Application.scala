@@ -2,12 +2,7 @@
 package org.movielens
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{DoubleType, IntegerType, StringType, StructType}
-import org.apache.spark.sql.functions.split
-import org.apache.spark.sql.functions._
 import org.movielens.insights.Insights
-import org.movielens.loader.DataFrameLoader
 
 object Application {
 
@@ -43,11 +38,14 @@ object Application {
 
     val insights: Insights = new Insights(csvDataDirectory, outputDirectory, sparkSession)
 
-    //insights.moviesReleasedPerYear()
-    //insights.getAllUniqueGenres()
-    //insights.averageNumberOfGenresPerMovie()
-    //insights.movieCountTaggedComedy()
-    insights.rankedGenres()
+    // Complete questions. See HW3 PDF under docs for question details.
+    insights.moviesReleasedPerYear() // Question 1
+    insights.averageNumberOfGenresPerMovie() // Question 2
+    insights.rankedGenres() // Question 3
+    // TODO: Question 4
+    insights.movieCountTaggedComedy() // Question 5
+    insights.getAllUniqueGenres() // Question 6
+    insights.mostPopularMoviesInTimeRange(beginDate = "03/05/2012", endDate = "08/27/2012", n = 10) // Question 7
 
     sparkSession.close()
   }
