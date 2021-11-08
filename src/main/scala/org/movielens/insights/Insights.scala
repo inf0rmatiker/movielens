@@ -202,8 +202,8 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
   }
 
   def mostPopularMoviesInTimeRange(beginDate: String, endDate: String, n: Integer): Unit = {
-    val beginTs: Long = convertStringDateToMillisTimestamp(beginDate)
-    val endTs: Long = convertStringDateToMillisTimestamp(endDate)
+    val beginTs: Long = convertStringDateToMillisTimestamp(beginDate) / 1000
+    val endTs: Long = convertStringDateToMillisTimestamp(endDate) / 1000
 
     val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
     val ratingsDf: DataFrame = dataFrameLoader.loadRatings()
