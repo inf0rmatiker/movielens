@@ -214,11 +214,11 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       col("timestamp").between(beginTs, endTs)
     ).drop("userId", "timestamp")
 
-    // Group by movieId, taking the average of the rating as the accumulation
-    val averageMovieRatingDf: DataFrame = ratingsWithinPeriodDf.groupBy(col("movieId")).avg("rating")
+    // Group by movieId, taking count of all ratings for a given movie
+    val movieRatingCountsDf: DataFrame = ratingsWithinPeriodDf.groupBy(col("movieId")).count().as("movie_review_count")
 
-    // Sort by average ratings, descending, and select only top N entries
-    val topNMoviesIdsDf: DataFrame = averageMovieRatingDf.sort(col("avg(rating)").desc).limit(n)
+    // Sort by rating counts, descending, and select only top N entries
+    val topNMoviesIdsDf: DataFrame = movieRatingCountsDf.sort(col("movie_review_count").desc).limit(n)
 
     // Add movie title, genres, etc to the top N movies
     val withMovieInfoDf: DataFrame = topNMoviesIdsDf.join(movieInfoDf, usingColumn = "movieId")
