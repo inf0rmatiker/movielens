@@ -201,7 +201,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
 
     // Inner-join the two on "movieId", then drop "movieId" leaving only "rating" and "genres"
     val joinedDf: DataFrame = movieIdsAndRatingsDf.join(
-      movieIdsAndGenresDf, usingColumns = Seq("movieId"), joinType = "inner"
+      movieIdsAndGenresDf, usingColumn = "movieId"
     ).drop("movieId")
 
     // Group by key "genres", averaging the rating
