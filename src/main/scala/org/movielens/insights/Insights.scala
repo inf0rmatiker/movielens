@@ -189,4 +189,29 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
     dataFrameSaver.saveAsCsv("question_6", uniqueGenres)
   }
 
+  def getTopNGenreCombinations(n: Integer): Unit = {
+    val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
+    val ratingsDf: DataFrame = dataFrameLoader.loadRatings()
+
+    // Leave only "movieId" and "rating" columns
+    val movieIdsAndRatingsDf: DataFrame = ratingsDf.drop("userId", "timestamp")
+
+    // Leave only "movieId" and "genres"
+    val movieIdsAndGenresDf: DataFrame = movieInfoDf.drop("title")
+
+    // Inner-join the two on "movieId", then drop "movieId" leaving only "rating" and "genres"
+    val joinedDf: DataFrame = movieIdsAndRatingsDf.join(
+      movieIdsAndGenresDf, usingColumns = Seq("movieId"), joinType = "inner"
+    ).drop("movieId")
+
+    // Group by key "genres", averaging the rating
+    val averagedRatingsDf: DataFrame = joinedDf.groupBy("genres").avg("rating")
+
+    // Sort by average rating, descending, and limit to top N entries
+    val topNRatingsDf: DataFrame = averagedRatingsDf.sort(col("avg(rating)").desc).limit(n)
+
+    // Save results
+    dataFrameSaver.saveAsCsv("question_4", topNRatingsDf)
+  }
+
 }
