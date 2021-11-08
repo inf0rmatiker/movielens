@@ -11,7 +11,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
   val dataFrameLoader: DataFrameLoader = new DataFrameLoader(dataDirectory, sparkSession)
   val dataFrameSaver: DataFrameSaver = new DataFrameSaver(outputDirectory)
 
-  def getUniqueGenresList( ): List[String] = {
+  def getUniqueGenresList(): List[String] = {
     import sparkSession.implicits._
     val genres_df: DataFrame = dataFrameLoader.loadMovieInfo()
     val unique_genres_df: DataFrame = genres_df.withColumn("genre_list", split(col("genres"), "\\|" ))
@@ -86,8 +86,7 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
     dataFrameSaver.saveAsCsv("question_2", averageGenresDf)
   }
 
-  def rankedGenres(): Unit =
-  {
+  def rankedGenres(): Unit = {
     import sparkSession.implicits._
 
     var ranked_Genres: Map[String, Double] = Map()
@@ -132,7 +131,6 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
    * @return The unique genres as a DataFrame with column "genre"
    */
   def getAllUniqueGenres(): Unit = {
-    import sparkSession.implicits._
 
     val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
 
