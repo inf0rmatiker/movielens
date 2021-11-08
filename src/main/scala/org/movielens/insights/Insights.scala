@@ -5,6 +5,8 @@ import org.apache.spark.sql.functions.{asc, avg, col, explode, explode_outer, li
 import org.movielens.loader.DataFrameLoader
 import org.movielens.saver.DataFrameSaver
 import org.apache.spark.sql.functions._
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class Insights(val dataDirectory: String, val outputDirectory: String, val sparkSession: SparkSession) {
 
@@ -187,6 +189,41 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
 
     // Save results
     dataFrameSaver.saveAsCsv("question_6", uniqueGenres)
+  }
+
+  /**
+   * Takes a string date in the form: "MM/DD/YYYY" and converts a timestamp
+   * in the format to milliseconds since 1970
+   * @param date String in format MM/DD/YYYY
+   * @return Long timestamp in milliseconds since 1970
+   */
+  def convertStringDateToMillisTimestamp(date: String): Long = {
+    val format: SimpleDateFormat = new SimpleDateFormat("MM/dd/yyyy")
+    val dateObject: Date = format.parse(date)
+    dateObject.getTime()
+  }
+
+  def mostPopularMoviesInTimeRange(beginDate: String, endDate: String, n: Integer): Unit = {
+    val beginTs: Long = convertStringDateToMillisTimestamp(beginDate)
+    val endTs: Long = convertStringDateToMillisTimestamp(endDate)
+
+    val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
+    val ratingsDf: DataFrame = dataFrameLoader.loadRatings()
+
+    // Select only ratings that occurred between the specified time bounds,
+    // Then drop "userId" and "timestamp" leaving only "rating" and "movieId"
+    val ratingsWithinPeriodDf: DataFrame = ratingsDf.filter(
+      col("timestamp").between(beginTs, endTs)
+    ).drop("userId", "timestamp")
+
+    // Group by movieId, taking the average of the rating as the accumulation
+    val averageMovieRatingDf: DataFrame = ratingsWithinPeriodDf.groupBy(col("movieId")).avg("rating")
+
+    // Sort by average ratings, descending, and select only top N entries
+    val topNMoviesIdsDf: DataFrame = averageMovieRatingDf.sort(col("avg(rating)").desc).limit(n)
+
+    val withMovieInfoDf: DataFrame = topNMoviesIdsDf.join(movieInfoDf, usingColumn = "movieId", joinType = "inner")
+
   }
 
   def getTopNGenreCombinations(n: Integer): Unit = {
