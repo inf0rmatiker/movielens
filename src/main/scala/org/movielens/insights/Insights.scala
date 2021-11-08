@@ -215,10 +215,10 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
     ).drop("userId", "timestamp")
 
     // Group by movieId, taking count of all ratings for a given movie
-    val movieRatingCountsDf: DataFrame = ratingsWithinPeriodDf.groupBy(col("movieId")).count().as("movie_review_count")
+    val movieRatingCountsDf: DataFrame = ratingsWithinPeriodDf.groupBy(col("movieId")).count()
 
     // Sort by rating counts, descending, and select only top N entries
-    val topNMoviesIdsDf: DataFrame = movieRatingCountsDf.sort(col("movie_review_count").desc).limit(n)
+    val topNMoviesIdsDf: DataFrame = movieRatingCountsDf.sort(col("count(movieId)").desc).limit(n)
 
     // Add movie title, genres, etc to the top N movies
     val withMovieInfoDf: DataFrame = topNMoviesIdsDf.join(movieInfoDf, usingColumn = "movieId")
