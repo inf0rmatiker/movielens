@@ -5,6 +5,8 @@ import org.apache.spark.sql.functions.{asc, avg, col, explode, explode_outer, li
 import org.movielens.loader.DataFrameLoader
 import org.movielens.saver.DataFrameSaver
 import org.apache.spark.sql.functions._
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class Insights(val dataDirectory: String, val outputDirectory: String, val sparkSession: SparkSession) {
 
@@ -13,12 +15,12 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
 
   def getUniqueGenresList(): List[String] = {
     import sparkSession.implicits._
-    val genres_df: DataFrame = dataFrameLoader.loadMovieInfo()
-    val unique_genres_df: DataFrame = genres_df.withColumn("genre_list", split(col("genres"), "\\|" ))
+    val genresDf: DataFrame = dataFrameLoader.loadMovieInfo()
+    val uniqueGenresDf: DataFrame = genresDf.withColumn("genre_list", split(col("genres"), "\\|" ))
       .select($"movieId", explode($"genre_list").as("genre_type"))
       .select($"genre_type").dropDuplicates(Seq("genre_type"))
 
-    return unique_genres_df.select($"genre_type").map(genre => genre.getString(0)).collect().toList
+    return uniqueGenresDf.select($"genre_type").map(genre => genre.getString(0)).collect().toList
   }
 
   def moviesReleasedPerYear(): Unit = {
@@ -48,8 +50,6 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       .withColumn("count",  lit(1))
       .select(columnNames.head, columnNames.tail: _*)
 
-    releaseDf.select(split(col("genres"), ""))
-
     /*
       Group by "release_year", using the aggregate sum from the "count" column.
       Order by the "release_year" field.
@@ -76,23 +76,23 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
   def averageNumberOfGenresPerMovie(): Unit = {
     import sparkSession.implicits._
 
-    val selectColumns = Seq("movieId", "genre_cnt")
+    val selectColumns = Seq("movieId", "genre_count")
     val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
 
-    val genresDf: DataFrame = movieInfoDf.withColumn("genre_cnt", size(split($"genres", "\\|")))
+    val genresDf: DataFrame = movieInfoDf.withColumn("genre_count", size(split($"genres", "\\|")))
       .select(selectColumns.head, selectColumns.tail: _*)
 
-    val averageGenresDf: DataFrame = genresDf.select(avg($"genre_cnt"))
+    val averageGenresDf: DataFrame = genresDf.select(avg($"genre_count"))
     dataFrameSaver.saveAsCsv("question_2", averageGenresDf)
   }
 
   def rankedGenres(): Unit = {
     import sparkSession.implicits._
 
-    var ranked_Genres: Map[String, Double] = Map()
-    val unique_genres : List[String] = getUniqueGenresList()
+    var rankedGenres: Map[String, Double] = Map()
+    val uniqueGenres : List[String] = getUniqueGenresList()
 
-    for ( genre <- unique_genres) {
+    for (genre <- uniqueGenres) {
       val selectGenreColumns = Seq("movieId", "genres")
       val movieGenresDF: DataFrame = dataFrameLoader.loadMovieInfo()
         .select(selectGenreColumns.head, selectGenreColumns.tail: _*)
@@ -101,14 +101,14 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
       val movieRatingsDF: DataFrame = dataFrameLoader.loadRatings( )
         .select(selectRatingColumns.head, selectRatingColumns.tail: _*)
 
-      val ratings_DF: DataFrame = movieRatingsDF.join(movieGenresDF, Seq("movieId"), "left").filter($"genres".rlike(s"(?i)\\b$genre\\b"))
-      val avg_rating_list: List[Double] = ratings_DF.select(avg($"rating")).map(genre => genre.getDouble(0)).collect().toList
+      val ratingsDf: DataFrame = movieRatingsDF.join(movieGenresDF, Seq("movieId"), "left").filter($"genres".rlike(s"(?i)\\b$genre\\b"))
+      val avgRatingList: List[Double] = ratingsDf.select(avg($"rating")).map(genre => genre.getDouble(0)).collect().toList
 
-      ranked_Genres += (genre -> avg_rating_list.head )
+      rankedGenres += (genre -> avgRatingList.head)
     }
 
-    val orderdRankedGenres : DataFrame = ranked_Genres.toSeq.toDF("genre", "avg_rating").sort(desc("avg_rating"))
-    dataFrameSaver.saveAsCsv("question_3", orderdRankedGenres)
+    val orderedRankedGenres : DataFrame = rankedGenres.toSeq.toDF("genre", "avg_rating").sort(desc("avg_rating"))
+    dataFrameSaver.saveAsCsv("question_3", orderedRankedGenres)
   }
 
   def movieCountTaggedComedy(): Unit = {
@@ -117,12 +117,12 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
     val movieTagsDf: DataFrame = dataFrameLoader.loadTags()
 
     val selectColumns = Seq("movieId", "tag")
-    val genres_df : DataFrame = movieTagsDf.filter($"tag".rlike("(?i)\\bcomedy\\b"))
+    val genresDf: DataFrame = movieTagsDf.filter($"tag".rlike("(?i)\\bcomedy\\b"))
       .select(selectColumns.head, selectColumns.tail: _*)
       .withColumn("isComedy", lit(1))
       .dropDuplicates(Seq("movieId"))
 
-    val comedySumDf : DataFrame = genres_df.select(sum($"isComedy"))
+    val comedySumDf : DataFrame = genresDf.select(sum($"isComedy"))
     dataFrameSaver.saveAsCsv("question_5", comedySumDf)
   }
 
@@ -187,6 +187,44 @@ class Insights(val dataDirectory: String, val outputDirectory: String, val spark
 
     // Save results
     dataFrameSaver.saveAsCsv("question_6", uniqueGenres)
+  }
+
+  /**
+   * Takes a string date in the form: "MM/DD/YYYY" and converts a timestamp
+   * in the format to milliseconds since 1970
+   * @param date String in format MM/DD/YYYY
+   * @return Long timestamp in milliseconds since 1970
+   */
+  def convertStringDateToMillisTimestamp(date: String): Long = {
+    val format: SimpleDateFormat = new SimpleDateFormat("MM/dd/yyyy")
+    val dateObject: Date = format.parse(date)
+    dateObject.getTime()
+  }
+
+  def mostPopularMoviesInTimeRange(beginDate: String, endDate: String, n: Integer): Unit = {
+    val beginTs: Long = convertStringDateToMillisTimestamp(beginDate) / 1000
+    val endTs: Long = convertStringDateToMillisTimestamp(endDate) / 1000
+
+    val movieInfoDf: DataFrame = dataFrameLoader.loadMovieInfo()
+    val ratingsDf: DataFrame = dataFrameLoader.loadRatings()
+
+    // Select only ratings that occurred between the specified time bounds,
+    // Then drop "userId" and "timestamp" leaving only "rating" and "movieId"
+    val ratingsWithinPeriodDf: DataFrame = ratingsDf.filter(
+      col("timestamp").between(beginTs, endTs)
+    ).drop("userId", "timestamp")
+
+    // Group by movieId, taking count of all ratings for a given movie
+    val movieRatingCountsDf: DataFrame = ratingsWithinPeriodDf.groupBy(col("movieId")).count()
+
+    // Sort by rating counts, descending, and select only top N entries
+    val topNMoviesIdsDf: DataFrame = movieRatingCountsDf.sort(col("count").desc).limit(n)
+
+    // Add movie title, genres, etc to the top N movies
+    val withMovieInfoDf: DataFrame = topNMoviesIdsDf.join(movieInfoDf, usingColumn = "movieId")
+
+    // Save results
+    dataFrameSaver.saveAsCsv("question_7", withMovieInfoDf)
   }
 
   def getTopNGenreCombinations(n: Integer): Unit = {
